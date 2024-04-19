@@ -6,6 +6,9 @@ services:
     hostname: database
     ports:
       - 5432:5432
+    volumes:
+      - "./postgres_data:/var/lib/postgresql/data:rw"
+      - "./init-db.sh:/docker-entrypoint-initdb.d/init-user-db.sh"
     env_file:
       - ./.env
     networks:
@@ -17,10 +20,13 @@ services:
       retries: 5
 
   api:
-    image: api_drugs:v1
+    image: kiramishima/api_drugs:v1
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: api
     ports:
-      - 3000:3000
+      - 8080:8080
     links:
       - database
     env_file:
@@ -33,7 +39,7 @@ services:
     profiles: [ "tools" ]
     volumes:
       - ./migrations:/migrations
-    command: ["-path", "/migrations", "-database",  "postgres://root:root@database:5432/ionix?sslmode=disable", "up", "3"]
+    command: ["-path=/migrations", "-database=postgres://postgres:postgres@database:5432/ionix?sslmode=disable", "up", "3"]
     depends_on:
       database:
         condition: service_healthy

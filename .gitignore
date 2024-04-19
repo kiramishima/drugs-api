@@ -95,3 +95,6 @@ bin/api-vaccins
 cloud-sql-proxy
 
 deploy/.env
+
+postgres_data
+postgres_data/*

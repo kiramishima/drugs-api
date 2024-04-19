@@ -4,7 +4,7 @@ version: '3'
 
 env:
   # App
-  API_NAME: api-vaccins
+  API_NAME: api_drugs
   APP_SECRET: B@nk4I
   # Database
   DATABASE_DRIVER: pgx
@@ -17,8 +17,8 @@ env:
   PORT: 8080
   HTTP_SERVER_READ_TIMEOUT: 1s
   HTTP_SERVER_WRITE_TIMEOUT: 2s
-  # JWTF
-  JWT_PRIVATE_KEY: RacconCity
+  # JWT
+  JWT_PRIVATE_KEY: SecretMedicament
   TOKEN_TTL: 300
   # Context
   CONTEXT_TIMEOUT: 10
