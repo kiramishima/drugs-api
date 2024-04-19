@@ -159,7 +159,7 @@ docker compose up api -d
     - Crear la base de datos `ionix`
     - Si tiene ya instalado task, ejecutar el comando `task dbUp`.
 - Instalar [Task CLI](https://taskfile.dev/) para ejecutar las tareas del taskfile.
-    - Ejecuta el comando `task run` para levantar el servicio. Default port is 8080
+    - Ejecuta el comando `task run` para levantar el servicio. Default port es 8080
 
 ---
 ## Endpoints
