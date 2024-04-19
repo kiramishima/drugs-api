@@ -1,0 +1,1 @@
+docker build --tag api_drugs:v1 -f ./deploy/Dockerfile .

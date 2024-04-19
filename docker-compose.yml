@@ -1,0 +1,46 @@
+version: "3.9"
+services:
+  database:
+    image: postgres:latest
+    container_name: database
+    hostname: database
+    ports:
+      - 5432:5432
+    env_file:
+      - ./.env
+    networks:
+      - drugs
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: api_drugs:v1
+    container_name: api
+    ports:
+      - 3000:3000
+    links:
+      - database
+    env_file:
+      - ./.env
+    networks:
+      - drugs
+
+  migrate:
+    image: migrate/migrate:latest
+    profiles: [ "tools" ]
+    volumes:
+      - ./migrations:/migrations
+    command: ["-path", "/migrations", "-database",  "postgres://root:root@database:5432/ionix?sslmode=disable", "up", "3"]
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - drugs
+
+networks:
+  drugs:
+    driver: bridge

@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS drugs(
+    id SERIAL NOT NULL PRIMARY KEY,
+    name VARCHAR(120) NOT NULL,
+    approved BOOLEAN NOT NULL,
+    min_dose SMALLINT NOT NULL,
+    max_dose SMALLINT NOT NULL,
+    available_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
+    deleted_at TIMESTAMP
+);

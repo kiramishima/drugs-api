@@ -1,0 +1,61 @@
+# https://taskfile.dev
+
+version: '3'
+
+env:
+  # App
+  API_NAME: api-vaccins
+  APP_SECRET: B@nk4I
+  # Database
+  DATABASE_DRIVER: pgx
+  DATABASE_URL: postgres://postgres:123456@192.168.100.47/ionix
+  DATABASE_MAX_OPEN_CONNECTIONS: 25
+  DATABASE_MAX_IDDLE_CONNECTIONS: 25
+  DATABASE_MAX_IDDLE_TIME: 15m
+  # HTTP
+  HTTP_SERVER_IDLE_TIMEOUT: 60s
+  PORT: 8080
+  HTTP_SERVER_READ_TIMEOUT: 1s
+  HTTP_SERVER_WRITE_TIMEOUT: 2s
+  # JWTF
+  JWT_PRIVATE_KEY: RacconCity
+  TOKEN_TTL: 300
+  # Context
+  CONTEXT_TIMEOUT: 10
+
+tasks:
+  build:
+    cmds:
+      - env CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s' -a -installsuffix cgo -o bin/$API_NAME ./cmd/main.go
+
+  run:
+    deps:
+      - build
+    cmds:
+      - ./bin/$API_NAME
+
+  test:
+    desc: Run all tests ignoring cache
+    cmds:
+      - go test -cover -v ./... -count=1
+
+  clean:
+    cmds:
+      - rm -fr ./bin
+
+  dbUp:
+    cmds:
+      - migrate -path=./migrations -database=$(DATABASE_URL) up
+
+  dbDown:
+    cmds:
+      - migrate -path=./migrations -database=$(DATABASE_URL) down
+
+  mocks:
+    cmds:
+      - mockgen -source .\internal\interfaces\auth_service.go -destination .\internal\mocks\auth_service.go -package mocks
+      - mockgen -source .\internal\interfaces\drugs_service.go -destination .\internal\mocks\drugs_service.go -package mocks
+      - mockgen -source .\internal\interfaces\vaccinations_service.go -destination .\internal\mocks\vaccinations_service.go -package mocks
+      - mockgen -source .\internal\interfaces\auth_repository.go -destination .\internal\mocks\auth_repository.go -package mocks
+      - mockgen -source .\internal\interfaces\drugs_repository.go -destination .\internal\mocks\drugs_repository.go -package mocks
+      - mockgen -source .\internal\interfaces\vaccinations_repository.go -destination .\internal\mocks\vaccinations_repository.go -package mocks
