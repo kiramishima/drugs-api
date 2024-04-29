@@ -14,8 +14,8 @@ import (
 
 var _ impl.AuthHandlers = (*handler)(nil)
 
-// NewAuthHandlers creates a instance of auth handlers
-func NewAuthHandlers(r *chi.Mux, logger *zap.SugaredLogger, s impl.AuthService, render *render.Render, validate *validator.Validate) {
+// NewAuthHandlers creates an instance of auth handlers
+func NewAuthHandlers(r *chi.Mux, logger *zap.Logger, s impl.AuthService, render *render.Render, validate *validator.Validate) {
 	handler := &handler{
 		logger:   logger,
 		service:  s,
@@ -30,7 +30,7 @@ func NewAuthHandlers(r *chi.Mux, logger *zap.SugaredLogger, s impl.AuthService, 
 }
 
 type handler struct {
-	logger   *zap.SugaredLogger
+	logger   *zap.Logger
 	service  impl.AuthService
 	response *render.Render
 	validate *validator.Validate
@@ -46,7 +46,7 @@ func (h handler) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 		_ = h.response.JSON(w, http.StatusBadRequest, models.ErrorResponse{ErrorMessage: "La petición es invalidad o esta mal formateada"})
 		return
 	}
-	h.logger.Info(form)
+	h.logger.Info("Form", zap.Any("data", form))
 	// Validate form
 	err = form.Validate(h.validate)
 	if err != nil {
@@ -85,7 +85,7 @@ func (h handler) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if err := h.response.JSON(w, http.StatusOK, models.Message{Message: "Registro exitoso."}); err != nil {
-		h.logger.Error(err)
+		h.logger.Error("[ERROR]", zap.Error(err))
 		_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: "Internal Server Error"})
 		return
 	}
@@ -102,7 +102,7 @@ func (h handler) LoginHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	h.logger.Info(form)
+	h.logger.Info("[INFO]", zap.Any("FormData", form))
 	// Validate data
 	err = form.Validate(h.validate)
 	if err != nil {
@@ -145,7 +145,7 @@ func (h handler) LoginHandler(w http.ResponseWriter, req *http.Request) {
 
 	// response
 	if err := h.response.JSON(w, http.StatusOK, resp); err != nil {
-		h.logger.Error(err)
+		h.logger.Error("[ERROR]", zap.Error(err))
 		_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: "Internal Server Error"})
 		return
 	}

@@ -14,8 +14,7 @@ import (
 
 func TestService_GetListDrugs(t *testing.T) {
 	t.Parallel()
-	zlog, _ := zap.NewProduction()
-	logger := zlog.Sugar()
+	logger := zap.NewNop()
 	mockCtrl := gomock.NewController(t)
 	// ctx := context.Background()
 

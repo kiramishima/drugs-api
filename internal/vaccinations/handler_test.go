@@ -102,12 +102,11 @@ func TestHandler_ListDrugsHandler(t *testing.T) {
 			}
 
 			router := chi.NewRouter()
-			logger, _ := zap.NewProduction()
-			slogger := logger.Sugar()
+			logger := zap.NewNop()
 			validate := validator.New()
 			r := render.New()
 
-			NewVaccionationHandlers(router, slogger, uc, r, validate)
+			NewVaccionationHandlers(router, logger, uc, r, validate)
 
 			// router.ServeHTTP(recorder, request)
 			ts := httptest.NewServer(router)

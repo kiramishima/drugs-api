@@ -14,14 +14,13 @@ import (
 
 func TestRepository_GetVaccinationsData(t *testing.T) {
 	t.Parallel()
-	zlog, _ := zap.NewProduction()
-	logger := zlog.Sugar()
+	logger := zap.NewNop()
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	defer func(db *sql.DB) {
 		err := db.Close()
 		if err != nil {
-			logger.Error(err)
+			logger.Error("", zap.Error(err))
 		}
 	}(db)
 
@@ -42,7 +41,9 @@ func TestRepository_GetVaccinationsData(t *testing.T) {
 	INNER JOIN drugs d on d.id = v.drug_id
 	WHERE d.deleted_at IS NULL OR v.deleted_at IS NULL`
 
-	var rows = sqlmock.NewRows([]string{"id", "name", "drug", "drug_id", "dose", "applied_at"}).FromCSVString("1,jhon wick,aspirina,1,5,2024-03-18 15:45:00")
+	var rows = sqlmock.NewRows([]string{"id", "name", "drug", "drug_id", "dose", "applied_at"}).
+		FromCSVString("1,jhon wick,aspirina,1,5,2024-03-18 15:45:00").
+		FromCSVString("2,jhon connor,cafiaspirina,1,5,2024-03-18 15:45:00")
 
 	t.Run("OK", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(c, time.Duration(5)*time.Second)

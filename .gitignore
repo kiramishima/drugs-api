@@ -98,3 +98,8 @@ deploy/.env
 
 postgres_data
 postgres_data/*
+log
+log/out.log
+coverage
+log/out.log
+coverage.txt

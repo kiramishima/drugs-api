@@ -17,10 +17,10 @@ import (
 
 var _ impl.VaccinationsHandlers = (*handler)(nil)
 
-// NewVaccionationHandlers creates a instance of vaccination handlers
-func NewVaccionationHandlers(r *chi.Mux, logger *zap.SugaredLogger, s impl.VaccinationService, render *render.Render, validate *validator.Validate) {
+// NewVaccionationHandlers creates an instance of vaccination handlers
+func NewVaccionationHandlers(r *chi.Mux, logger *zap.Logger, s impl.VaccinationService, render *render.Render, validate *validator.Validate) {
 	var tokenAuth = jwtauth.New("HS256", []byte(os.Getenv("JWT_PRIVATE_KEY")), nil)
-	logger.Info("token ->", tokenAuth)
+	// logger.Info("token ->", tokenAuth)
 	handler := &handler{
 		logger:   logger,
 		service:  s,
@@ -37,7 +37,7 @@ func NewVaccionationHandlers(r *chi.Mux, logger *zap.SugaredLogger, s impl.Vacci
 }
 
 type handler struct {
-	logger   *zap.SugaredLogger
+	logger   *zap.Logger
 	service  impl.VaccinationService
 	response *render.Render
 	validate *validator.Validate
@@ -48,7 +48,7 @@ func (h handler) ListVaccinationsHandler(w http.ResponseWriter, req *http.Reques
 	ctx := req.Context()
 	// Call Service
 	resp, err := h.service.GetListVaccinations(ctx)
-	h.logger.Info(resp)
+	h.logger.Info("ListVaccinationsHandler", zap.Any("resp", resp))
 	if err != nil {
 		select {
 		case <-ctx.Done():
@@ -67,7 +67,7 @@ func (h handler) ListVaccinationsHandler(w http.ResponseWriter, req *http.Reques
 	}
 
 	if err := h.response.JSON(w, http.StatusOK, models.ResponseWrapper[[]*models.Vaccination]{Data: resp}); err != nil {
-		h.logger.Error(err)
+		h.logger.Error("[ERROR]", zap.Error(err))
 		_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: "Ocurrio un error interno. Por favor intente más tarde"})
 		return
 	}
@@ -83,7 +83,7 @@ func (h handler) CreateVaccinationHandler(w http.ResponseWriter, req *http.Reque
 		_ = h.response.JSON(w, http.StatusBadRequest, models.ErrorResponse{ErrorMessage: ErrInvalidRequestBody.Error()})
 		return
 	}
-	h.logger.Info(form)
+	h.logger.Info("[INFO]", zap.Any("CreateVaccinationHandler", form))
 	// Validate form
 	err = form.Validate(h.validate)
 	if err != nil {
@@ -107,14 +107,14 @@ func (h handler) CreateVaccinationHandler(w http.ResponseWriter, req *http.Reque
 			} else if errors.Is(err, ErrExecuteStatement) {
 				_ = h.response.JSON(w, http.StatusBadRequest, models.ErrorResponse{ErrorMessage: "Ocurrio un error por favor intente más tarde"})
 			} else {
-				_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: "Ocurrio un errro por favor intente más tarde"})
+				_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: "Ocurrio un error por favor intente más tarde"})
 			}
 		}
 		return
 	}
 
 	if err := h.response.JSON(w, http.StatusOK, models.Message{Message: "Se ha registrado de manera exitosa"}); err != nil {
-		h.logger.Error(err)
+		h.logger.Error("[ERROR]", zap.Error(err))
 		_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: InternalServerError.Error()})
 		return
 	}
@@ -131,8 +131,8 @@ func (h handler) UpdateVaccinationHandler(w http.ResponseWriter, req *http.Reque
 		_ = h.response.JSON(w, http.StatusBadRequest, models.ErrorResponse{ErrorMessage: ErrInvalidRequestBody.Error()})
 		return
 	}
+	h.logger.Info("[INFO]", zap.Any("VacID", VacID), zap.Any("form", form))
 
-	h.logger.Info(VacID, form)
 	// context
 	ctx := req.Context()
 
@@ -151,14 +151,14 @@ func (h handler) UpdateVaccinationHandler(w http.ResponseWriter, req *http.Reque
 			} else if errors.Is(err, ErrExecuteStatement) {
 				_ = h.response.JSON(w, http.StatusBadRequest, models.ErrorResponse{ErrorMessage: "Ocurrio un error por favor intente más tarde"})
 			} else {
-				_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: "Ocurrio un errro por favor intente más tarde"})
+				_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: "Ocurrio un error por favor intente más tarde"})
 			}
 		}
 		return
 	}
 
 	if err := h.response.JSON(w, http.StatusOK, models.Message{Message: "Se ha actualizado la información de manera exitosa"}); err != nil {
-		h.logger.Error(err)
+		h.logger.Error("[ERROR]", zap.Error(err))
 		_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: InternalServerError.Error()})
 		return
 	}
@@ -187,7 +187,7 @@ func (h handler) DeleteVaccinationHandler(w http.ResponseWriter, req *http.Reque
 	}
 
 	if err := h.response.JSON(w, http.StatusOK, models.Message{Message: "Se ha eliminado el registro de manera exitosa"}); err != nil {
-		h.logger.Error(err)
+		h.logger.Error("[ERROR]", zap.Error(err))
 		_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: InternalServerError.Error()})
 		return
 	}

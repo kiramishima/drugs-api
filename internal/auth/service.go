@@ -15,13 +15,13 @@ import (
 var _ impl.AuthService = (*service)(nil)
 
 type service struct {
-	logger         *zap.SugaredLogger
+	logger         *zap.Logger
 	repository     impl.AuthRepository
 	contextTimeOut time.Duration
 }
 
 // NewAuthService creates a new auth service
-func NewAuthService(repo impl.AuthRepository, logger *zap.SugaredLogger, timeout time.Duration) *service {
+func NewAuthService(repo impl.AuthRepository, logger *zap.Logger, timeout time.Duration) *service {
 	return &service{
 		logger:         logger,
 		repository:     repo,
@@ -36,11 +36,11 @@ func (svc service) SignIn(ctx context.Context, form *models.AuthForm) (*models.A
 	defer cancel()
 
 	user, err := svc.repository.FindUserByCredentials(ctx, form)
-	svc.logger.Info(user, err)
+	svc.logger.Info("", zap.Any("user", user), zap.Any("error", err))
 	if err != nil {
 		select {
 		case <-cxt.Done():
-			svc.logger.Info(errors.New("auth service is closed"), ctx.Err())
+			svc.logger.Info("Timeout", zap.Error(ctx.Err()))
 			return nil, ErrServiceAuth
 		default:
 			if errors.Is(err, ErrPrepapareQuery) {
@@ -65,7 +65,7 @@ func (svc service) SignIn(ctx context.Context, form *models.AuthForm) (*models.A
 	// Generate Token
 	token, err := utils.GenerateJWT(user)
 	if err != nil {
-		svc.logger.Error(err.Error(), fmt.Sprintf("%T", err))
+		svc.logger.Info("Token Gen Error", zap.Any("TokenGenError", fmt.Sprintf("%T", err)))
 		return nil, jwt.ErrSignatureInvalid
 	}
 

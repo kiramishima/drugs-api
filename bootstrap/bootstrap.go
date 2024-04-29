@@ -19,9 +19,13 @@ import (
 	"time"
 )
 
+const (
+	logPath = "log/out.log"
+)
+
 func bootstrap(
 	lifecycle fx.Lifecycle,
-	logger *zap.SugaredLogger,
+	logger *zap.Logger,
 	server *server.Server,
 ) {
 
@@ -41,9 +45,11 @@ func bootstrap(
 
 var Module = fx.Options(
 	config.Module,
-	fx.Provide(func() *zap.SugaredLogger {
-		logger, _ := zap.NewProduction()
-		return logger.Sugar()
+	fx.Provide(func() *zap.Logger {
+		logger, _ := config.NewProductionLogger(logPath)
+		return logger
+		// logger, _ := zap.NewProduction()
+		// return logger.Sugar()
 	}),
 	fx.Provide(func() *chi.Mux {
 		var r = chi.NewRouter()

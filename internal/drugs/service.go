@@ -3,22 +3,17 @@ package drugs
 import (
 	"context"
 	"errors"
-	"go.uber.org/zap"
 	impl "kiramishima/ionix/internal/interfaces"
 	"kiramishima/ionix/internal/models"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 var _ impl.DrugService = (*service)(nil)
 
-type service struct {
-	logger         *zap.SugaredLogger
-	repository     impl.DrugRepository
-	contextTimeOut time.Duration
-}
-
-// NewDrugService creates a new auth service
-func NewDrugService(repo impl.DrugRepository, logger *zap.SugaredLogger, timeout time.Duration) *service {
+// NewDrugService creates a new drug service
+func NewDrugService(repo impl.DrugRepository, logger *zap.Logger, timeout time.Duration) *service {
 	return &service{
 		logger:         logger,
 		repository:     repo,
@@ -26,9 +21,16 @@ func NewDrugService(repo impl.DrugRepository, logger *zap.SugaredLogger, timeout
 	}
 }
 
+type service struct {
+	logger         *zap.Logger
+	repository     impl.DrugRepository
+	contextTimeOut time.Duration
+}
+
 func (svc service) GetListDrugs(ctx context.Context) ([]*models.Drug, error) {
 	cxt, cancel := context.WithTimeout(ctx, svc.contextTimeOut)
 	defer cancel()
+
 	data, err := svc.repository.GetDrugsData(cxt)
 
 	if err != nil {
@@ -83,7 +85,7 @@ func (svc service) UpdateDrug(ctx context.Context, drugId int, form *models.Drug
 	if errors.Is(err, ErrDrugNotFound) {
 		return ErrDrugNotFound
 	}
-	svc.logger.Info(drug)
+	svc.logger.Info("[INFO]", zap.Any("Drug", drug))
 	//
 	if form.Name != nil {
 		drug.Name = *form.Name
@@ -101,10 +103,11 @@ func (svc service) UpdateDrug(ctx context.Context, drugId int, form *models.Drug
 		var dt = *form.AvailableAt
 		layout := "2006-01-02 15:04:05"
 		tm, _ := time.Parse(layout, dt)
-		svc.logger.Info(tm)
+		svc.logger.Info("[INFO]", zap.Any("time", tm))
 		drug.AvailableAt = tm
 	}
-	svc.logger.Info(form)
+	svc.logger.Info("[INFO]", zap.Any("drug_form", form))
+
 	// Call repository
 	err = svc.repository.UpdateDrugItem(cxt, drugId, drug)
 

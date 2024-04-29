@@ -23,11 +23,11 @@ const (
 
 type Server struct {
 	router chi.Router
-	logger *zap.SugaredLogger
+	logger *zap.Logger
 	cfg    *models.Configuration
 }
 
-func NewServer(cfg *models.Configuration, logger *zap.SugaredLogger, r *chi.Mux) *Server {
+func NewServer(cfg *models.Configuration, logger *zap.Logger, r *chi.Mux) *Server {
 	return &Server{
 		router: r,
 		logger: logger,
@@ -47,10 +47,10 @@ func (s *Server) Run() error {
 	}
 
 	go func() {
-		s.logger.Infof("Server is listening on PORT: %d", s.cfg.Port)
+		s.logger.Info(fmt.Sprintf("Server is listening on PORT: %d", s.cfg.Port))
 
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			s.logger.Fatalf("Error starting Server: ", err)
+			s.logger.Fatal(fmt.Sprintf("Error starting Server: %T", err))
 		}
 
 		_ = waitForShutdown(s.logger, server)
@@ -61,7 +61,7 @@ func (s *Server) Run() error {
 }
 
 // waitForShutdown graceful shutdown
-func waitForShutdown(logger *zap.SugaredLogger, server *http.Server) error {
+func waitForShutdown(logger *zap.Logger, server *http.Server) error {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 	<-sig
@@ -72,7 +72,7 @@ func waitForShutdown(logger *zap.SugaredLogger, server *http.Server) error {
 	if err := server.Shutdown(ctx); err != nil {
 		logger.Info("Server Exited Properly")
 		logger.Fatal("Failed gracefully")
-		logger.Fatal("failed to gracefully shut down server", err)
+		logger.Fatal("[FATAL]", zap.Error(err))
 		return err
 	}
 	return nil
@@ -80,7 +80,7 @@ func waitForShutdown(logger *zap.SugaredLogger, server *http.Server) error {
 
 // Module Server Module
 var Module = fx.Module("server",
-	fx.Provide(func(cfg *models.Configuration, logger *zap.SugaredLogger, r *chi.Mux) *Server {
+	fx.Provide(func(cfg *models.Configuration, logger *zap.Logger, r *chi.Mux) *Server {
 		return NewServer(cfg, logger, r)
 	}),
 )

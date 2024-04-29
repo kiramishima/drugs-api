@@ -18,11 +18,11 @@ var _ interfaces.AuthRepository = (*repository)(nil)
 // Repository struct
 type repository struct {
 	db  *sqlx.DB
-	log *zap.SugaredLogger
+	log *zap.Logger
 }
 
 // NewAuthRepository Creates a new instance of Repository
-func NewAuthRepository(conn *sqlx.DB, logger *zap.SugaredLogger) *repository {
+func NewAuthRepository(conn *sqlx.DB, logger *zap.Logger) *repository {
 	return &repository{
 		db:  conn,
 		log: logger,
@@ -68,12 +68,14 @@ func (repo repository) FindUserByCredentials(ctx context.Context, form *models.A
 func (repo repository) CreateAccount(ctx context.Context, form *models.RegisterForm) error {
 	tx, err := repo.db.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
+		repo.log.Info(err.Error())
 		return ErrBeginTransaction
 	}
+	defer tx.Rollback()
 
 	// Prepare STMT
 	var query = `INSERT INTO users(name, email, password) VALUES($1, $2, $3)`
-	stmt, err := repo.db.PreparexContext(ctx, query)
+	stmt, err := tx.PreparexContext(ctx, query)
 	if err != nil {
 		return ErrPrepapareQuery
 	}
@@ -83,7 +85,6 @@ func (repo repository) CreateAccount(ctx context.Context, form *models.RegisterF
 
 	if err != nil {
 		repo.log.Info(err.Error())
-		tx.Rollback()
 		// log.Println("Code 2 ", errors.Is(err, my.ErrDupeKey))
 		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
@@ -99,7 +100,6 @@ func (repo repository) CreateAccount(ctx context.Context, form *models.RegisterF
 
 	}
 	if err = tx.Commit(); err != nil {
-		tx.Rollback()
 		return ErrCommitTransaction
 	}
 	return nil

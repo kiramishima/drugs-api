@@ -17,8 +17,8 @@ import (
 
 var _ impl.DrugsHandlers = (*handler)(nil)
 
-// NewDrugHandlers creates a instance of drug handlers
-func NewDrugHandlers(r *chi.Mux, logger *zap.SugaredLogger, s impl.DrugService, render *render.Render, validate *validator.Validate) {
+// NewDrugHandlers creates an instance of drug handlers
+func NewDrugHandlers(r *chi.Mux, logger *zap.Logger, s impl.DrugService, render *render.Render, validate *validator.Validate) {
 	var tokenAuth = jwtauth.New("HS256", []byte(os.Getenv("JWT_PRIVATE_KEY")), nil)
 	// logger.Info("token ->", tokenAuth)
 	handler := &handler{
@@ -40,7 +40,7 @@ func NewDrugHandlers(r *chi.Mux, logger *zap.SugaredLogger, s impl.DrugService, 
 }
 
 type handler struct {
-	logger   *zap.SugaredLogger
+	logger   *zap.Logger
 	service  impl.DrugService
 	response *render.Render
 	validate *validator.Validate
@@ -51,7 +51,8 @@ func (h handler) ListDrugsHandler(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	// Call Service
 	resp, err := h.service.GetListDrugs(ctx)
-	h.logger.Info(resp)
+	h.logger.Info("[INFO]", zap.Any("SVC_RESPONSE", resp))
+
 	if err != nil {
 		select {
 		case <-ctx.Done():
@@ -70,7 +71,8 @@ func (h handler) ListDrugsHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if err := h.response.JSON(w, http.StatusOK, models.ResponseWrapper[[]*models.Drug]{Data: resp}); err != nil {
-		h.logger.Error(err)
+		h.logger.Error("[ERROR]", zap.Error(err))
+
 		_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: "Ocurrio un error interno. Por favor intente más tarde"})
 		return
 	}
@@ -86,7 +88,7 @@ func (h handler) CreateDrugHandler(w http.ResponseWriter, req *http.Request) {
 		_ = h.response.JSON(w, http.StatusBadRequest, models.ErrorResponse{ErrorMessage: ErrInvalidRequestBody.Error()})
 		return
 	}
-	h.logger.Info(form)
+	h.logger.Info("[INFO]", zap.Any("form", form))
 	// Validate form
 	err = form.Validate(h.validate)
 	if err != nil {
@@ -108,16 +110,16 @@ func (h handler) CreateDrugHandler(w http.ResponseWriter, req *http.Request) {
 			if errors.Is(err, ErrDuplicateDrug) {
 				_ = h.response.JSON(w, http.StatusBadRequest, models.ErrorResponse{ErrorMessage: "Este medicamento ya se ha dado de alta con anterioridad"})
 			} else if errors.Is(err, ErrExecuteStatement) {
-				_ = h.response.JSON(w, http.StatusBadRequest, models.ErrorResponse{ErrorMessage: "Ocurrio un errro por favor intente más tarde"})
+				_ = h.response.JSON(w, http.StatusBadRequest, models.ErrorResponse{ErrorMessage: "Ocurrio un error por favor intente más tarde"})
 			} else {
-				_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: "Ocurrio un errro por favor intente más tarde"})
+				_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: "Ocurrio un error por favor intente más tarde"})
 			}
 		}
 		return
 	}
 
 	if err := h.response.JSON(w, http.StatusOK, models.Message{Message: "Se ha registrado el nuevo medicamento de manera exitosa"}); err != nil {
-		h.logger.Error(err)
+		h.logger.Error("[ERROR]", zap.Error(err))
 		_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: InternalServerError.Error()})
 		return
 	}
@@ -135,7 +137,7 @@ func (h handler) UpdateDrugHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	h.logger.Info(form)
+	h.logger.Info("[INFO]", zap.Any("form", form))
 	// context
 	ctx := req.Context()
 
@@ -152,16 +154,16 @@ func (h handler) UpdateDrugHandler(w http.ResponseWriter, req *http.Request) {
 			} else if errors.Is(err, ErrDrugNotFound) {
 				_ = h.response.JSON(w, http.StatusBadRequest, models.ErrorResponse{ErrorMessage: "Este medicamento no existe"})
 			} else if errors.Is(err, ErrExecuteStatement) {
-				_ = h.response.JSON(w, http.StatusBadRequest, models.ErrorResponse{ErrorMessage: "Ocurrio un errro por favor intente más tarde"})
+				_ = h.response.JSON(w, http.StatusBadRequest, models.ErrorResponse{ErrorMessage: "Ocurrio un error por favor intente más tarde"})
 			} else {
-				_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: "Ocurrio un errro por favor intente más tarde"})
+				_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: "Ocurrio un error por favor intente más tarde"})
 			}
 		}
 		return
 	}
 
 	if err := h.response.JSON(w, http.StatusOK, models.Message{Message: "Se ha actualizado la información del medicamento de manera exitosa"}); err != nil {
-		h.logger.Error(err)
+		h.logger.Error("[ERROR]", zap.Error(err))
 		_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: InternalServerError.Error()})
 		return
 	}
@@ -183,14 +185,14 @@ func (h handler) DeleteDrugHandler(w http.ResponseWriter, req *http.Request) {
 			} else if errors.Is(err, ErrExecuteStatement) {
 				_ = h.response.JSON(w, http.StatusBadRequest, models.ErrorResponse{ErrorMessage: "Ocurrio un error por favor intente más tarde"})
 			} else {
-				_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: "Ocurrio un errro por favor intente más tarde"})
+				_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: "Ocurrio un error por favor intente más tarde"})
 			}
 		}
 		return
 	}
 
 	if err := h.response.JSON(w, http.StatusOK, models.Message{Message: "Se ha eliminado el medicamento de manera exitosa"}); err != nil {
-		h.logger.Error(err)
+		h.logger.Error("[ERROR]", zap.Error(err))
 		_ = h.response.JSON(w, http.StatusInternalServerError, models.ErrorResponse{ErrorMessage: InternalServerError.Error()})
 		return
 	}

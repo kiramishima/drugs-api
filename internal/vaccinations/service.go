@@ -12,7 +12,7 @@ import (
 var _ impl.VaccinationService = (*service)(nil)
 
 // NewVaccinationService creates a new vaccination service
-func NewVaccinationService(repo impl.VaccinationRepository, logger *zap.SugaredLogger, timeout time.Duration) *service {
+func NewVaccinationService(repo impl.VaccinationRepository, logger *zap.Logger, timeout time.Duration) *service {
 	return &service{
 		logger:         logger,
 		repository:     repo,
@@ -21,7 +21,7 @@ func NewVaccinationService(repo impl.VaccinationRepository, logger *zap.SugaredL
 }
 
 type service struct {
-	logger         *zap.SugaredLogger
+	logger         *zap.Logger
 	repository     impl.VaccinationRepository
 	contextTimeOut time.Duration
 }
@@ -47,7 +47,7 @@ func (svc service) GetListVaccinations(ctx context.Context) ([]*models.Vaccinati
 			}
 		}
 	}
-	svc.logger.Info(data)
+	svc.logger.Info("GetListVaccinations", zap.Any("data", data))
 	return data, nil
 }
 
@@ -82,11 +82,13 @@ func (svc service) UpdateVaccination(ctx context.Context, vaccinationId int, for
 	defer cancel()
 	// Retrieve the data
 	vaccination, err := svc.repository.GetVaccinationItemByID(cxt, vaccinationId)
-	svc.logger.Info(vaccination, err)
+	svc.logger.Info("UpdateVaccination", zap.Any("data", vaccination), zap.Any("err", err))
+
 	if errors.Is(err, ErrVaccinationNotFound) {
 		return ErrVaccinationNotFound
 	}
-	svc.logger.Info(vaccination)
+	svc.logger.Info("UpdateVaccination", zap.Any("data", vaccination))
+
 	//
 	if form.Name != nil {
 		vaccination.Name = *form.Name
@@ -101,10 +103,11 @@ func (svc service) UpdateVaccination(ctx context.Context, vaccinationId int, for
 		var dt = *form.AppliedAt
 		layout := "2006-01-02 15:04:05"
 		tm, _ := time.Parse(layout, dt)
-		svc.logger.Info(tm)
+		svc.logger.Info("UpdateVaccination", zap.Any("tm", tm))
 		vaccination.AppliedAt = tm
 	}
-	svc.logger.Info(form)
+	svc.logger.Info("UpdateVaccination", zap.Any("form", form))
+
 	// Call repository
 	err = svc.repository.UpdateVaccinationItem(cxt, vaccinationId, vaccination)
 
@@ -133,7 +136,8 @@ func (svc service) DeleteVaccination(ctx context.Context, vaccinationId int) err
 	defer cancel()
 
 	_, err := svc.repository.GetVaccinationItemByID(cxt, vaccinationId)
-	svc.logger.Info(vaccinationId, err)
+	svc.logger.Info("DeleteVaccination", zap.Any("vaccinationId", vaccinationId), zap.Any("err", err))
+
 	if errors.Is(err, ErrVaccinationNotFound) {
 		return ErrVaccinationNotFound
 	}

@@ -18,11 +18,11 @@ var _ interfaces.DrugRepository = (*repository)(nil)
 // Repository struct
 type repository struct {
 	db  *sqlx.DB
-	log *zap.SugaredLogger
+	log *zap.Logger
 }
 
 // NewDrugRepository Creates a new instance of Repository
-func NewDrugRepository(conn *sqlx.DB, logger *zap.SugaredLogger) *repository {
+func NewDrugRepository(conn *sqlx.DB, logger *zap.Logger) *repository {
 	return &repository{
 		db:  conn,
 		log: logger,
@@ -37,7 +37,13 @@ func (repo repository) GetDrugsData(ctx context.Context) ([]*models.Drug, error)
 	if err != nil {
 		return nil, ErrPrepapareQuery
 	}
-	defer stmt.Close()
+	defer func(stmt *sqlx.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			repo.log.Error("[ERROR]", zap.Error(err))
+
+		}
+	}(stmt)
 
 	var list = make([]*models.Drug, 0)
 
@@ -54,7 +60,7 @@ func (repo repository) GetDrugsData(ctx context.Context) ([]*models.Drug, error)
 		var availableAt sql.NullTime
 		var item = &models.Drug{}
 		err = rows.Scan(&item.ID, &item.Name, &item.Approved, &item.MinDose, &item.MaxDose, &availableAt)
-		repo.log.Info(item)
+		repo.log.Info("[INFO]", zap.Any("Item", item))
 		if errors.Is(err, sql.ErrNoRows) {
 			break
 		}
@@ -76,14 +82,20 @@ func (repo repository) GetDrugItemByID(ctx context.Context, drugId int) (*models
 	if err != nil {
 		return nil, ErrPrepapareQuery
 	}
-	defer stmt.Close()
+	defer func(stmt *sqlx.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			repo.log.Error("[ERROR]", zap.Error(err))
+
+		}
+	}(stmt)
 
 	rows := stmt.QueryRowContext(ctx, drugId)
 
 	var availableAt sql.NullTime
 	var item = &models.Drug{}
 	err = rows.Scan(&item.ID, &item.Name, &item.Approved, &item.MinDose, &item.MaxDose, &availableAt)
-	repo.log.Info(item)
+	repo.log.Info("[INFO]", zap.Any("Item", item))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrDrugNotFound
 	}
@@ -96,27 +108,40 @@ func (repo repository) GetDrugItemByID(ctx context.Context, drugId int) (*models
 }
 
 func (repo repository) CreateNewDrugItem(ctx context.Context, form *models.DrugForm) error {
-	repo.log.Info(form)
+	repo.log.Info("[INFO]", zap.Any("Form", form))
+	tx, err := repo.db.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	if err != nil {
+		repo.log.Info(err.Error())
+		return ErrBeginTransaction
+	}
+	defer func(tx *sqlx.Tx) {
+		err := tx.Rollback()
+		if err != nil {
+			repo.log.Error("[ERROR]", zap.Error(err))
+		}
+	}(tx)
+
 	var query = `INSERT INTO drugs (name, approved, min_dose, max_dose, available_at)
 	VALUES ($1, $2, $3, $4, CAST($5 AS TIMESTAMP))`
-	stmt, err := repo.db.PreparexContext(ctx, query)
+	stmt, err := tx.PreparexContext(ctx, query)
 	if err != nil {
 		return ErrPrepapareQuery
 	}
-	defer stmt.Close()
+	defer func(stmt *sqlx.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			repo.log.Error("[ERROR]", zap.Error(err))
 
-	tx, err := repo.db.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
-	if err != nil {
-		return ErrBeginTransaction
-	}
+		}
+	}(stmt)
 
 	_, err = stmt.ExecContext(ctx, form.Name, form.Approved, form.MinDose, form.MaxDose, form.AvailableAt)
 
 	if err != nil {
 		repo.log.Info(err.Error())
-		tx.Rollback()
 		// log.Println("Code 2 ", errors.Is(err, my.ErrDupeKey))
-		pgErr, ok := err.(*pgconn.PgError)
+		var pgErr *pgconn.PgError
+		ok := errors.As(err, &pgErr)
 		if ok {
 			repo.log.Info(pgErr.Code)
 			if pgErr.Code == "23505" {
@@ -128,30 +153,40 @@ func (repo repository) CreateNewDrugItem(ctx context.Context, form *models.DrugF
 
 	}
 	if err = tx.Commit(); err != nil {
-		tx.Rollback()
 		return ErrCommitTransaction
 	}
 	return nil
 }
 
 func (repo repository) UpdateDrugItem(ctx context.Context, drugId int, form *models.Drug) error {
-	repo.log.Info(form)
-	var query = `UPDATE drugs SET name = $1, approved = $2, min_dose = $3, max_dose = $4, available_at = $5 WHERE id = $6`
-	stmt, err := repo.db.PreparexContext(ctx, query)
-	if err != nil {
-		return ErrPrepapareQuery
-	}
-	defer stmt.Close()
-
+	repo.log.Info("[INFO]", zap.Any("Form", form))
 	tx, err := repo.db.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		return ErrBeginTransaction
 	}
+	defer func(tx *sqlx.Tx) {
+		err := tx.Rollback()
+		if err != nil {
+			repo.log.Error("[ERROR]", zap.Error(err))
+		}
+	}(tx)
+
+	var query = `UPDATE drugs SET name = $1, approved = $2, min_dose = $3, max_dose = $4, available_at = $5 WHERE id = $6`
+	stmt, err := tx.PreparexContext(ctx, query)
+	if err != nil {
+		return ErrPrepapareQuery
+	}
+	defer func(stmt *sqlx.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			repo.log.Error("[ERROR]", zap.Error(err))
+
+		}
+	}(stmt)
 
 	_, err = stmt.ExecContext(ctx, form.Name, form.Approved, form.MinDose, form.MaxDose, form.AvailableAt, drugId)
 
 	if err != nil {
-		tx.Rollback()
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
 			return ErrDrugNotFound
@@ -161,29 +196,39 @@ func (repo repository) UpdateDrugItem(ctx context.Context, drugId int, form *mod
 	}
 
 	if err = tx.Commit(); err != nil {
-		tx.Rollback()
 		return ErrCommitTransaction
 	}
 	return nil
 }
 
 func (repo repository) DeleteDrugItem(ctx context.Context, drugId int) error {
-	var query = `UPDATE drugs SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL`
-	stmt, err := repo.db.PreparexContext(ctx, query)
-	if err != nil {
-		return ErrPrepapareQuery
-	}
-	defer stmt.Close()
-
 	tx, err := repo.db.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		return ErrBeginTransaction
 	}
+	defer func(tx *sqlx.Tx) {
+		err := tx.Rollback()
+		if err != nil {
+			repo.log.Error("[ERROR]", zap.Error(err))
+		}
+	}(tx)
+
+	var query = `UPDATE drugs SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL`
+	stmt, err := tx.PreparexContext(ctx, query)
+	if err != nil {
+		return ErrPrepapareQuery
+	}
+	defer func(stmt *sqlx.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			repo.log.Error("[ERROR]", zap.Error(err))
+
+		}
+	}(stmt)
 
 	_, err = stmt.ExecContext(ctx, drugId)
 
 	if err != nil {
-		tx.Rollback()
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
 			return ErrDrugNotFound
@@ -193,7 +238,6 @@ func (repo repository) DeleteDrugItem(ctx context.Context, drugId int) error {
 	}
 
 	if err = tx.Commit(); err != nil {
-		tx.Rollback()
 		return ErrCommitTransaction
 	}
 	return nil

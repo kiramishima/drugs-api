@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/fx"
@@ -11,7 +12,7 @@ import (
 )
 
 // NewDatabase creates an instance of DB
-func NewDatabase(cfg *models.Configuration, logger *zap.SugaredLogger) (*sqlx.DB, error) {
+func NewDatabase(cfg *models.Configuration, logger *zap.Logger) (*sqlx.DB, error) {
 
 	db, err := sqlx.Connect(cfg.DatabaseDriver, cfg.DatabaseURL)
 	if err != nil {
@@ -40,7 +41,7 @@ func NewDatabase(cfg *models.Configuration, logger *zap.SugaredLogger) (*sqlx.DB
 		status = "down"
 		return nil, err
 	}
-	logger.Debugf("Status DB: %s", status)
+	logger.Debug(fmt.Sprintf("Status DB: %s", status))
 	return db, nil
 }
 

@@ -1,0 +1,6 @@
+{"level":"debug","ts":1714347212.9208374,"caller":"database/db.go:44","msg":"Status DB: up"}
+{"level":"info","ts":1714347212.9316933,"caller":"bootstrap/bootstrap.go:35","msg":"Starting API"}
+{"level":"info","ts":1714347212.9331164,"caller":"server/server.go:50","msg":"Server is listening on PORT: 8080"}
+{"level":"info","ts":1714350037.0693407,"caller":"auth/handler.go:105","msg":"[INFO]","FormData":{"email":"giny@mail.com","password":"12356"}}
+{"level":"info","ts":1714350037.1740882,"caller":"auth/service.go:39","msg":"","user":null,"error":"Usuario no existe"}
+{"level":"info","ts":1714350037.174391,"caller":"auth/service.go:50","msg":"Usuario no existe"}

@@ -13,7 +13,7 @@ import (
 
 // Module auth
 var Module = fx.Module("vaccinations",
-	fx.Invoke(func(conn *sqlx.DB, logger *zap.SugaredLogger, cfg *models.Configuration, r *chi.Mux, render *render.Render, validate *validator.Validate) error {
+	fx.Invoke(func(conn *sqlx.DB, logger *zap.Logger, cfg *models.Configuration, r *chi.Mux, render *render.Render, validate *validator.Validate) error {
 		// loads repository
 		var repo = NewVaccinationRepository(conn, logger)
 		// loads service

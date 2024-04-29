@@ -16,14 +16,13 @@ import (
 
 func TestRepository_CreateAccount(t *testing.T) {
 	t.Parallel()
-	zlog, _ := zap.NewProduction()
-	logger := zlog.Sugar()
+	logger := zap.NewNop()
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	defer func(db *sql.DB) {
 		err := db.Close()
 		if err != nil {
-			logger.Error(err)
+			logger.Error("", zap.Error(err))
 		}
 	}(db)
 
@@ -43,7 +42,8 @@ func TestRepository_CreateAccount(t *testing.T) {
 	item.Password = item.Hash256Password(item.Password)
 
 	t.Run("Insert is OK", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(c, time.Duration(5)*time.Second)
+
+		ctx, cancel := context.WithTimeout(c, time.Duration(10)*time.Second)
 		defer cancel()
 
 		mock.ExpectBegin()
@@ -61,6 +61,7 @@ func TestRepository_CreateAccount(t *testing.T) {
 	})
 
 	t.Run("Fail start transactionm", func(t *testing.T) {
+		t.Parallel()
 		ctx, cancel := context.WithTimeout(c, time.Duration(5)*time.Second)
 		defer cancel()
 
@@ -81,6 +82,7 @@ func TestRepository_CreateAccount(t *testing.T) {
 	})
 
 	t.Run("Fail prepare query", func(t *testing.T) {
+
 		ctx, cancel := context.WithTimeout(c, time.Duration(5)*time.Second)
 		defer cancel()
 
@@ -89,13 +91,13 @@ func TestRepository_CreateAccount(t *testing.T) {
 		mock.ExpectPrepare(query).
 			WillReturnError(ErrPrepapareQuery)
 
-		mock.ExpectCommit()
+		mock.ExpectRollback()
 
 		err := repo.CreateAccount(ctx, item)
 		t.Log("err", err)
 		assert.Error(t, err)
 		assert.EqualError(t, err, ErrPrepapareQuery.Error())
-		assert.Error(t, mock.ExpectationsWereMet())
+		assert.NoError(t, mock.ExpectationsWereMet())
 		if err = mock.ExpectationsWereMet(); err != nil {
 			fmt.Printf("unmet expectation error: %s", err)
 		}
@@ -165,14 +167,14 @@ func TestRepository_CreateAccount(t *testing.T) {
 }
 
 func TestRepository_FindUserByCredentials(t *testing.T) {
-	zlog, _ := zap.NewProduction()
-	logger := zlog.Sugar()
+	t.Parallel()
+	logger := zap.NewNop()
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	defer func(db *sql.DB) {
 		err := db.Close()
 		if err != nil {
-			logger.Error(err)
+			logger.Error("", zap.Error(err))
 		}
 	}(db)
 

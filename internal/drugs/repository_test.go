@@ -15,14 +15,13 @@ import (
 
 func TestRepository_GetDrugsData(t *testing.T) {
 	t.Parallel()
-	zlog, _ := zap.NewProduction()
-	logger := zlog.Sugar()
+	logger := zap.NewNop()
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	defer func(db *sql.DB) {
 		err := db.Close()
 		if err != nil {
-			logger.Error(err)
+			logger.Error("close db", zap.Error(err))
 		}
 	}(db)
 
@@ -70,14 +69,13 @@ func TestRepository_GetDrugsData(t *testing.T) {
 
 func TestRepository_GetDrugItemByID(t *testing.T) {
 	t.Parallel()
-	zlog, _ := zap.NewProduction()
-	logger := zlog.Sugar()
+	logger := zap.NewNop()
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	defer func(db *sql.DB) {
 		err := db.Close()
 		if err != nil {
-			logger.Error(err)
+			logger.Error("", zap.Error(err))
 		}
 	}(db)
 
@@ -124,14 +122,13 @@ func TestRepository_GetDrugItemByID(t *testing.T) {
 
 func TestRepository_CreateNewDrugItem(t *testing.T) {
 	t.Parallel()
-	zlog, _ := zap.NewProduction()
-	logger := zlog.Sugar()
+	logger := zap.NewNop()
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	defer func(db *sql.DB) {
 		err := db.Close()
 		if err != nil {
-			logger.Error(err)
+			logger.Error("", zap.Error(err))
 		}
 	}(db)
 
@@ -158,10 +155,8 @@ func TestRepository_CreateNewDrugItem(t *testing.T) {
 	}
 
 	t.Run("Insert is OK", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(c, time.Duration(5)*time.Second)
+		ctx, cancel := context.WithTimeout(c, time.Duration(10)*time.Second)
 		defer cancel()
-
-		mock.ExpectPrepare(query)
 
 		mock.ExpectBegin()
 
@@ -180,8 +175,6 @@ func TestRepository_CreateNewDrugItem(t *testing.T) {
 	t.Run("Duplicate record", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(c, time.Duration(5)*time.Second)
 		defer cancel()
-
-		mock.ExpectPrepare(query)
 
 		mock.ExpectBegin()
 
@@ -223,14 +216,13 @@ func TestRepository_CreateNewDrugItem(t *testing.T) {
 
 func TestRepository_UpdateDrugItem(t *testing.T) {
 	t.Parallel()
-	zlog, _ := zap.NewProduction()
-	logger := zlog.Sugar()
+	logger := zap.NewNop()
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	defer func(db *sql.DB) {
 		err := db.Close()
 		if err != nil {
-			logger.Error(err)
+			logger.Error("", zap.Error(err))
 		}
 	}(db)
 
@@ -260,8 +252,6 @@ func TestRepository_UpdateDrugItem(t *testing.T) {
 		ctx, cancel := context.WithTimeout(c, time.Duration(5)*time.Second)
 		defer cancel()
 
-		mock.ExpectPrepare(query)
-
 		mock.ExpectBegin()
 
 		mock.ExpectPrepare(query).
@@ -279,8 +269,6 @@ func TestRepository_UpdateDrugItem(t *testing.T) {
 	t.Run("Updated Not Existing Item", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(c, time.Duration(5)*time.Second)
 		defer cancel()
-
-		mock.ExpectPrepare(query)
 
 		mock.ExpectBegin()
 
@@ -301,14 +289,13 @@ func TestRepository_UpdateDrugItem(t *testing.T) {
 
 func TestRepository_DeleteDrugItem(t *testing.T) {
 	t.Parallel()
-	zlog, _ := zap.NewProduction()
-	logger := zlog.Sugar()
+	logger := zap.NewNop()
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	defer func(db *sql.DB) {
 		err := db.Close()
 		if err != nil {
-			logger.Error(err)
+			logger.Error("", zap.Error(err))
 		}
 	}(db)
 
@@ -323,8 +310,6 @@ func TestRepository_DeleteDrugItem(t *testing.T) {
 	t.Run("Deleted is OK", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(c, time.Duration(5)*time.Second)
 		defer cancel()
-
-		mock.ExpectPrepare(query)
 
 		mock.ExpectBegin()
 
@@ -344,8 +329,6 @@ func TestRepository_DeleteDrugItem(t *testing.T) {
 	t.Run("Fail Deleting Not Existing Item", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(c, time.Duration(5)*time.Second)
 		defer cancel()
-
-		mock.ExpectPrepare(query)
 
 		mock.ExpectBegin()
 

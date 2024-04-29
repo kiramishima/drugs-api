@@ -155,12 +155,11 @@ func TestHandler_LoginHandler(t *testing.T) {
 			// assert.NoError(t, err)
 
 			router := chi.NewRouter()
-			logger, _ := zap.NewProduction()
-			slogger := logger.Sugar()
+			logger := zap.NewNop()
 			validate := validator.New()
 			r := render.New()
 
-			NewAuthHandlers(router, slogger, uc, r, validate)
+			NewAuthHandlers(router, logger, uc, r, validate)
 			router.ServeHTTP(recorder, request)
 			tc.checkResponse(t, recorder)
 		})
@@ -290,12 +289,11 @@ func TestHandler_SignUpHandler(t *testing.T) {
 			// assert.NoError(t, err)
 
 			router := chi.NewRouter()
-			logger, _ := zap.NewProduction()
-			slogger := logger.Sugar()
+			logger := zap.NewNop()
 			validate := validator.New()
 			r := render.New()
 
-			NewAuthHandlers(router, slogger, uc, r, validate)
+			NewAuthHandlers(router, logger, uc, r, validate)
 			router.ServeHTTP(recorder, request)
 			tc.checkResponse(t, recorder)
 		})

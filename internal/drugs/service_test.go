@@ -2,19 +2,19 @@ package drugs
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
-	"go.uber.org/zap"
 	"kiramishima/ionix/internal/mocks"
 	"kiramishima/ionix/internal/models"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
+	"go.uber.org/zap"
 )
 
 func TestService_GetListDrugs(t *testing.T) {
 	t.Parallel()
-	zlog, _ := zap.NewProduction()
-	logger := zlog.Sugar()
+	logger := zap.NewNop()
 	mockCtrl := gomock.NewController(t)
 	// ctx := context.Background()
 
@@ -67,8 +67,7 @@ func TestService_GetListDrugs(t *testing.T) {
 
 func TestService_NewDrug(t *testing.T) {
 	t.Parallel()
-	zlog, _ := zap.NewProduction()
-	logger := zlog.Sugar()
+	logger := zap.NewNop()
 	mockCtrl := gomock.NewController(t)
 	// ctx := context.Background()
 
@@ -97,7 +96,7 @@ func TestService_NewDrug(t *testing.T) {
 	svc := NewDrugService(repo, logger, 5)
 
 	t.Run("Ok- Getting Data", func(t *testing.T) {
-		ctx := context.Background()
+		ctx, _ := context.WithTimeout(context.Background(), time.Duration(10)*time.Second)
 		var err = svc.NewDrug(ctx, item)
 		t.Log(err)
 		assert.NoError(t, err)
@@ -115,8 +114,7 @@ func TestService_NewDrug(t *testing.T) {
 
 func TestService_UpdateDrug(t *testing.T) {
 	t.Parallel()
-	zlog, _ := zap.NewProduction()
-	logger := zlog.Sugar()
+	logger := zap.NewNop()
 	mockCtrl := gomock.NewController(t)
 	// ctx := context.Background()
 
@@ -176,8 +174,7 @@ func TestService_UpdateDrug(t *testing.T) {
 
 func TestService_DeleteDrug(t *testing.T) {
 	t.Parallel()
-	zlog, _ := zap.NewProduction()
-	logger := zlog.Sugar()
+	logger := zap.NewNop()
 	mockCtrl := gomock.NewController(t)
 	// ctx := context.Background()
 
