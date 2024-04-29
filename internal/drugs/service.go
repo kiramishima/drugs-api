@@ -58,12 +58,13 @@ func (svc service) NewDrug(ctx context.Context, form *models.DrugForm) error {
 	defer cancel()
 
 	err := svc.repository.CreateNewDrugItem(ctx, form)
-
+	svc.logger.Error("", zap.Error(err))
 	if err != nil {
 		svc.logger.Error(err.Error())
 
 		select {
 		case <-cxt.Done():
+			svc.logger.Error("[ERROR]", zap.Error(ctx.Err()))
 			return ErrTimeout
 		default:
 			if errors.Is(err, ErrDuplicateDrug) {
